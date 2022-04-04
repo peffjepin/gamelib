@@ -1,58 +1,265 @@
+#define MAX_WINDOWS 8
+#define METH_BOTH METH_VARARGS | METH_KEYWORDS
 #define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
 #include <GLFW/glfw3.h>
+#include <structmember.h>
 
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *event_list;
+    int width;
+    int height;
+    char *title;
+    GLFWwindow *_glfw;
+} Window;
 
 static PyObject *WindowError;
-static GLFWwindow *window = NULL;
+static PyObject *Window_size(Window *self);
+static PyObject *Window_clear(Window *self, PyObject *args, PyObject *kwds);
+static PyObject *Window_swap(Window *self);
+static PyObject *Window_destroy(Window *self);
+static PyObject *Window_poll(Window *self);
+static PyObject *Window_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static void      Window_dealloc(Window *self);
+
+PyDoc_STRVAR(WindowType_doc, "A GLFW Window.\n\
+\n\
+Methods\n\
+-------\n\
+size()\n\
+clear(r, g, b, a)\n\
+swap()\n\
+destroy()\n\
+poll()"
+);
+
+PyDoc_STRVAR(Window_size_doc, "Get's the window's (width, height) in px.\n\
+\n\
+Returns\n\
+-------\n\
+tuple");
+
+PyDoc_STRVAR(Window_clear_doc, "Issues an OpenGL clear command with the given colors.\n\
+Params expected in range 0-1\n\
+\n\
+Parameters\n\
+----------\n\
+r : float = 0.0\n\
+g : float = 0.0\n\
+b : float = 0.0\n\
+a : float = 0.0");
+
+PyDoc_STRVAR(Window_swap_doc, "Swap the windows framebuffers.");
+PyDoc_STRVAR(Window_destroy_doc, "Destroys the window.");
+// TODO: expand docs to explain how this mechanism works once fleshed out
+// Note: this method can be pulled off the Window class to the module level
+PyDoc_STRVAR(Window_poll_doc, "Poll glfw framework for events");
+
+PyDoc_STRVAR(new_doc, "Creates a new window with the glfw framework.\n\
+\n\
+Parameters\n\
+----------\n\
+width      : int (px)\n\
+height     : int (px)\n\
+title      : str\n\
+headless   : bool=False\n\
+resizeable : bool=True");
+
+static PyMethodDef Window_methods[] = {
+    {"size",    (PyCFunction) Window_size,    METH_NOARGS, Window_size_doc},
+    {"clear",   (PyCFunction) Window_clear,   METH_BOTH,   Window_clear_doc},
+    {"swap",    (PyCFunction) Window_swap,    METH_NOARGS, Window_swap_doc},
+    {"destroy", (PyCFunction) Window_destroy, METH_NOARGS, Window_destroy_doc},
+    {"poll",    (PyCFunction) Window_poll,    METH_NOARGS, Window_poll_doc},
+    {NULL}
+};
+
+static PyMemberDef Window_members[] = {
+    {"event_list", T_OBJECT_EX, offsetof(Window, event_list), 0, 
+     "events polled by window framework"},
+    {NULL}
+};
+
+static PyTypeObject WindowType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name = "window.Window",
+    .tp_doc = WindowType_doc,
+    .tp_basicsize = sizeof(Window),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = Window_new,
+    .tp_dealloc = (destructor) Window_dealloc,
+    .tp_methods = Window_methods,
+    .tp_members = Window_members
+};
 
 
-static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+
+static PyObject *Module_init(PyObject *self);
+static PyObject *Module_destroy_all(PyObject *self);
+
+// TODO: Module level docs
+PyDoc_STRVAR(Module_doc, "");
+
+PyDoc_STRVAR(Module_init_doc, "Initializes GLFW internally.\n\
+This must be called prior to creating windows manually.");
+
+PyDoc_STRVAR(Module_destroy_all_doc, "Terminates GLFW internally.\n\
+This will destroy all running windows.");
+
+static PyMethodDef Module_methods[] = {
+    {"init",        (PyCFunction) Module_init,        METH_NOARGS, Module_init_doc},
+    {"destroy_all", (PyCFunction) Module_destroy_all, METH_NOARGS, Module_destroy_all_doc},
+    {NULL}
+};
+
+static PyModuleDef ModuleDef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "window",  
+    .m_doc = Module_doc,    
+    .m_size = -1,      
+    .m_methods = Module_methods, 
+};
+
+
+
+PyMODINIT_FUNC PyInit_window(void)
 {
-    printf("key: %c, scancode: %d, action: %d, mods: %d\n", key, scancode, action, mods);
+    PyObject *module = NULL;
+    module = PyModule_Create(&ModuleDef);
+
+    WindowError = PyErr_NewException("window.WindowError", NULL, NULL);
+    Py_XINCREF(WindowError);
+
+    if (module == NULL)
+        goto error;
+
+    if (PyModule_AddObject(module, "WindowError", WindowError) < 0)
+        goto error;
+
+    if (PyType_Ready(&WindowType) < 0)
+        goto error;
+
+    Py_INCREF(&WindowType);
+    if (PyModule_AddObject(module, "Window", (PyObject *) &WindowType) < 0)
+    {
+        Py_DECREF(&WindowType);
+        goto error;
+    }
+
+    return module;
+
+error:
+    Py_XDECREF(WindowError);
+    Py_XDECREF(module);
+    return NULL;
 }
 
 
-static void error_callback(int code, char *message)
-{
-    PyErr_SetString(WindowError, message);
-}
+/* TODO: Implement a better strategy for handling multiple window or 
+ * simply use a single global window for now. */
+
+// window registry
+static Window *WINDOWS[MAX_WINDOWS] = {NULL};
+
+/* register a gamelib window so it can be found by glfw
+   returns -1 if there are too many windows, or 0 on success */
+static int register_window(Window *window);
+
+/* unregister a gamelib window before we destroy it */
+static void unregister_window(Window *window);
+
+/* get a gamelib window associated with a glfw window pointer
+   returns NULL if window is not found */
+static Window *get_window_from_glfw(GLFWwindow *glfw);
+
+static void glfw_key_callback(GLFWwindow *glfw, int key, int scancode, int action, int mods);
+static void glfw_error_callback(int code, char *message);
 
 
-static PyObject * 
-window_create(PyObject* self, PyObject* args)
+
+/*
+ *
+ * Begin Window type implementation
+ *
+ */
+
+static PyObject *
+Window_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    int width, height;
+    char *kwlist[] = {"width", "height", "title", "headless", "resizeable", NULL};
+    int width, height, headless = 0, resizable = 1;
     char *title;
 
-    if (!PyArg_ParseTuple(args, "iis", &width, &height, &title))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "iis|pp", kwlist, 
+                                     &width, &height, &title, 
+                                     &headless, &resizable))
         return NULL;
 
-    glfwSetErrorCallback((GLFWerrorfun) error_callback);
-    if (!glfwInit())
+    Window *self = (Window *) type->tp_alloc(type, 0);
+    if (self == NULL)
         return NULL;
 
-    // glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    window = glfwCreateWindow(width, height, title, NULL, NULL);
+    if (headless)
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+    if (!resizable)
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    GLFWwindow *window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (!window)
     {
-        glfwTerminate();
+        if (!PyErr_Occurred())
+            PyErr_SetString(
+                WindowError,
+                "You must initialize glfw before creating a window."
+            );
+        return NULL;
+    }
+
+    PyObject *event_list = PyList_New(0);
+    if (!event_list)
+        return NULL;
+
+    self->event_list = event_list;
+    self->width = width;
+    self->height = height;
+    self->title = title;
+    self->_glfw = window;
+
+    if (register_window(self) < 0)
+    {
+        PyErr_SetString(WindowError, "Exceeded maximum window count");
         return NULL;
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, key_callback);
+    glfwSetKeyCallback(window, glfw_key_callback);
 
-    Py_RETURN_NONE;
+    return (PyObject *) self;
 }
 
 
-static PyObject * 
-window_clear(PyObject* self, PyObject* args)
+static PyObject *
+Window_size(Window *self)
 {
-    float r, g, b, a;
+    glfwGetWindowSize(self->_glfw, &self->width, &self->height);
+    return Py_BuildValue("(ii)", self->width, self->height);    
+}
 
-    if (!PyArg_ParseTuple(args, "ffff", &r, &g, &b, &a))
+
+static PyObject *
+Window_clear(Window *self, PyObject *args, PyObject *kwds)
+{
+    // TODO: if window is not active window set active
+    char *kwlist[] = {"r", "g", "b", "a", NULL};
+    float r = 0.0, g = 0.0, b = 0.0, a = 0.0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ffff", kwlist, 
+                                     &r, &g, &b, &a))
         return NULL;
 
     glClearColor(r, g, b, a);
@@ -62,69 +269,146 @@ window_clear(PyObject* self, PyObject* args)
 }
 
 
-static PyObject * 
-window_swap(PyObject* self, PyObject* args)
+static PyObject *
+Window_swap(Window *self)
 {
-    glfwSwapBuffers(window);
-
+    glfwSwapBuffers(self->_glfw);
     Py_RETURN_NONE;
 }
 
 
-static PyObject * 
-window_poll(PyObject* self, PyObject* args)
+static PyObject *
+Window_destroy(Window *self)
 {
-    glfwPollEvents();
+    unregister_window(self);
 
-    Py_RETURN_NONE;
-}
-
-
-static PyObject * 
-window_destroy(PyObject* self, PyObject* args)
-{
-    glfwTerminate();
-
-    Py_RETURN_NONE;
-}
-
-
-static PyMethodDef window_module_functions[] = {
-    {"create", window_create, METH_VARARGS, "initialize the window"},
-    {"clear", window_clear, METH_VARARGS, "clear the framebuffer"},
-    {"swap", window_swap, METH_VARARGS, "swap framebuffers"},
-    {"poll", window_poll, METH_VARARGS, "poll for input events"},
-    {"destroy", window_destroy, METH_VARARGS, "close the window"},
-    {NULL, NULL, 0, NULL}
-};
-
-
-static struct PyModuleDef window_module = {
-    PyModuleDef_HEAD_INIT,
-    "window",  
-    NULL,    
-    -1,      
-    window_module_functions 
-};
-
-
-PyMODINIT_FUNC PyInit_window(void)
-{
-    PyObject *module;
-
-    module = PyModule_Create(&window_module);
-    if (module == NULL)
-        return NULL;
-
-    WindowError = PyErr_NewException("window.WindowError", NULL, NULL);
-    Py_XINCREF(WindowError);
-    if (PyModule_AddObject(module, "WindowError", WindowError) < 0)
+    if (self->_glfw != NULL)
     {
-        Py_XDECREF(WindowError);
-        Py_CLEAR(WindowError);
-        Py_DECREF(module);
-        return NULL;
+        glfwDestroyWindow(self->_glfw);
+        self->_glfw = NULL;
     }
 
-    return module;
+    Py_RETURN_NONE;
+}
+
+
+static PyObject *
+Window_poll(Window *self)
+{
+    glfwPollEvents();
+    Py_RETURN_NONE;
+}
+
+
+static void
+Window_dealloc(Window *self)
+{
+    Window_destroy(self);
+    Py_DECREF(self->event_list);
+    Py_TYPE(self)->tp_free(self);
+}
+
+
+/*
+ *
+ * Begin window module level implementation
+ *
+ */
+
+static PyObject *
+Module_init(PyObject *self)
+{
+    glfwSetErrorCallback((GLFWerrorfun) glfw_error_callback);
+    if (!glfwInit())
+        return NULL;
+    Py_RETURN_NONE;
+}
+
+
+static PyObject * 
+Module_destroy_all(PyObject *self)
+{
+    glfwTerminate();
+    Py_RETURN_NONE;
+}
+
+
+/*
+ *
+ * Begin helpers
+ *
+ */
+
+static int
+register_window(Window *window)
+{
+    int i = 0;
+    for (;;i++)
+    {
+        if (i >= MAX_WINDOWS)
+            return -1;
+
+        if (WINDOWS[i] == NULL)
+            break;
+    }
+
+    WINDOWS[i] = window;
+    return 0;
+}
+
+
+static void
+unregister_window(Window *window)
+{
+    for (int i = 0; i < MAX_WINDOWS; i++)
+    {
+        if (WINDOWS[i] == window)
+        {
+            WINDOWS[i] = NULL;
+            return;
+        }
+    }
+}
+
+
+static Window *
+get_window_from_glfw(GLFWwindow *glfw)
+{
+    for (int i = 0; i < MAX_WINDOWS; i++)
+    {
+        Window *registered = WINDOWS[i];
+
+        if (registered && registered->_glfw == glfw)
+        {
+            return registered;
+        }
+    }
+
+    return NULL;
+}
+
+
+static void 
+glfw_key_callback(GLFWwindow *glfw, int key, int scancode, int action, int mods)
+{
+    // bail if we're waiting on an exception to be handled
+    if (PyErr_Occurred())
+        return;
+
+    Window *window = get_window_from_glfw(glfw);
+    if (!window)
+        return;
+    
+    PyObject *tuple = Py_BuildValue("(iii)", key, action, mods);
+    if (!tuple)
+        return;
+
+    PyList_Append(window->event_list, tuple);
+}
+
+
+static void 
+glfw_error_callback(int code, char *message)
+{
+    PyErr_SetString(WindowError, message);
 }

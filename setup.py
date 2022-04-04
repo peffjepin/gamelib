@@ -30,8 +30,8 @@ window_module = setuptools.Extension(
     "window",
     sources=["gamelib/extensions/window_module.c"],
     extra_compile_args=flags,
+    extra_link_args=["-lglfw", "-lGL"]
 )
-PkgConfig.configure_extension(window_module, ("glfw3", "gl"))
 
 
 if __name__ == "__main__":
