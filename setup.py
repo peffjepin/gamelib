@@ -3,7 +3,8 @@ import setuptools
 import subprocess
 import shlex
 
-is_posix = if sys.platform.lower() == "posix"
+is_posix = sys.platform.lower() == "posix"
+
 
 class PkgConfig:
     # namespace for pkg-config cli
