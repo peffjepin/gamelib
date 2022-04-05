@@ -1,7 +1,9 @@
+import sys
 import setuptools
 import subprocess
 import shlex
 
+is_posix = if sys.platform.lower() == "posix"
 
 class PkgConfig:
     # namespace for pkg-config cli
@@ -25,7 +27,10 @@ class PkgConfig:
         extension.extra_link_args.extend(libs)
 
 
-flags = ["-std=c11", "-Wall", "-Wpedantic"]
+flags = ["-std=c11", "-Wall"]
+if is_posix:
+    flags.append("-Wpedantic")
+
 window_module = setuptools.Extension(
     "window",
     sources=["gamelib/extensions/window_module.c"],
