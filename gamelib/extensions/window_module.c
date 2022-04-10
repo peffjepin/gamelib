@@ -27,7 +27,8 @@ static PyObject *Window_poll(Window *self);
 static PyObject *Window_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 static void      Window_dealloc(Window *self);
 
-PyDoc_STRVAR(WindowType_doc, "A GLFW Window.\n\
+PyDoc_STRVAR(WindowType_doc, 
+"A GLFW Window.\n\
 \n\
 Methods\n\
 -------\n\
@@ -35,16 +36,17 @@ size()\n\
 clear(r, g, b, a)\n\
 swap()\n\
 destroy()\n\
-poll()"
-);
+poll()\n");
 
-PyDoc_STRVAR(Window_size_doc, "Get's the window's (width, height) in px.\n\
+PyDoc_STRVAR(Window_size_doc, 
+"Get's the window's (width, height) in px.\n\
 \n\
 Returns\n\
 -------\n\
-tuple");
+tuple\n");
 
-PyDoc_STRVAR(Window_clear_doc, "Issues an OpenGL clear command with the given colors.\n\
+PyDoc_STRVAR(Window_clear_doc, 
+"Issues an OpenGL clear command with the given colors.\n\
 Params expected in range 0-1\n\
 \n\
 Parameters\n\
@@ -52,7 +54,7 @@ Parameters\n\
 r : float = 0.0\n\
 g : float = 0.0\n\
 b : float = 0.0\n\
-a : float = 0.0");
+a : float = 0.0\n");
 
 PyDoc_STRVAR(Window_swap_doc, "Swap the windows framebuffers.");
 PyDoc_STRVAR(Window_destroy_doc, "Destroys the window.");
@@ -60,7 +62,8 @@ PyDoc_STRVAR(Window_destroy_doc, "Destroys the window.");
 // Note: this method can be pulled off the Window class to the module level
 PyDoc_STRVAR(Window_poll_doc, "Poll glfw framework for events");
 
-PyDoc_STRVAR(new_doc, "Creates a new window with the glfw framework.\n\
+PyDoc_STRVAR(new_doc, 
+"Creates a new window with the glfw framework.\n\
 \n\
 Parameters\n\
 ----------\n\
@@ -68,7 +71,7 @@ width      : int (px)\n\
 height     : int (px)\n\
 title      : str\n\
 headless   : bool=False\n\
-resizeable : bool=True");
+resizeable : bool=True\n");
 
 static PyMethodDef Window_methods[] = {
     {"size",    (PyCFunction) Window_size,    METH_NOARGS, Window_size_doc},
@@ -106,11 +109,13 @@ static PyObject *Module_destroy_all(PyObject *self);
 // TODO: Module level docs
 PyDoc_STRVAR(Module_doc, "");
 
-PyDoc_STRVAR(Module_init_doc, "Initializes GLFW internally.\n\
-This must be called prior to creating windows manually.");
+PyDoc_STRVAR(Module_init_doc, 
+"Initializes GLFW internally.\n\
+This must be called prior to creating windows manually.\n");
 
-PyDoc_STRVAR(Module_destroy_all_doc, "Terminates GLFW internally.\n\
-This will destroy all running windows.");
+PyDoc_STRVAR(Module_destroy_all_doc, 
+"Terminates GLFW internally.\n\
+This will destroy all running windows.\n");
 
 static PyMethodDef Module_methods[] = {
     {"init",        (PyCFunction) Module_init,        METH_NOARGS, Module_init_doc},
