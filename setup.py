@@ -34,9 +34,12 @@ if is_posix:
 
 window_module = setuptools.Extension(
     "window",
-    sources=["gamelib/extensions/window_module.c"],
+    sources=[
+        "gamelib/extensions/window_module.c",
+        "gamelib/extensions/glad.c"
+    ],
     extra_compile_args=flags,
-    extra_link_args=["-lglfw", "-lGL"]
+    extra_link_args=["-lglfw"]
 )
 
 

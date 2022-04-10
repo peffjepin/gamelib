@@ -1,8 +1,10 @@
 #define MAX_WINDOWS 8
 #define METH_BOTH METH_VARARGS | METH_KEYWORDS
 #define PY_SSIZE_T_CLEAN
+#define GLFW_INCLUDE_NONE
 
 #include <Python.h>
+#include "glad.h"
 #include <GLFW/glfw3.h>
 #include <structmember.h>
 
@@ -237,6 +239,7 @@ Window_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     }
 
     glfwMakeContextCurrent(window);
+    gladLoadGL();
     glfwSetKeyCallback(window, glfw_key_callback);
 
     return (PyObject *) self;
