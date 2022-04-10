@@ -30,13 +30,15 @@ static void      Window_dealloc(Window *self);
 PyDoc_STRVAR(WindowType_doc, 
 "A GLFW Window.\n\
 \n\
-Methods\n\
--------\n\
-size()\n\
-clear(r, g, b, a)\n\
-swap()\n\
-destroy()\n\
-poll()\n");
+Create a new window with the glfw framework:\n\
+\n\
+Parameters\n\
+----------\n\
+width      : int (px)\n\
+height     : int (px)\n\
+title      : str\n\
+headless   : bool=False\n\
+resizeable : bool=True\n");
 
 PyDoc_STRVAR(Window_size_doc, 
 "Get's the window's (width, height) in px.\n\
@@ -61,17 +63,6 @@ PyDoc_STRVAR(Window_destroy_doc, "Destroys the window.");
 // TODO: expand docs to explain how this mechanism works once fleshed out
 // Note: this method can be pulled off the Window class to the module level
 PyDoc_STRVAR(Window_poll_doc, "Poll glfw framework for events");
-
-PyDoc_STRVAR(new_doc, 
-"Creates a new window with the glfw framework.\n\
-\n\
-Parameters\n\
-----------\n\
-width      : int (px)\n\
-height     : int (px)\n\
-title      : str\n\
-headless   : bool=False\n\
-resizeable : bool=True\n");
 
 static PyMethodDef Window_methods[] = {
     {"size",    (PyCFunction) Window_size,    METH_NOARGS, Window_size_doc},

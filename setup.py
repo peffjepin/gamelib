@@ -1,14 +1,14 @@
-import sys
+import os
 import setuptools
 
-is_posix = sys.platform.lower() == "posix"
+is_posix = os.name.lower() == "posix"
 
 flags = []
 links = []
 libraries = ["glfw"]
 
 if is_posix:
-    flags.extend(("-std=c11", "-Wall", "-Wpedantic"))
+    flags.extend(("-std=c11", "-Wall", "-Wno-missing-braces"))
 
 window_module = setuptools.Extension(
     "window",
