@@ -1,1 +1,3 @@
 recursive-include gamelib/extensions *
+recursive-include include *
+include glfw/ *
