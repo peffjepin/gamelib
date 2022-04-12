@@ -9,7 +9,8 @@ POSIX = "posix"
 COMMON = "common"
 
 glfw_dir = "glfw"
-include_dir = "include"
+glad_dir = "glad"
+cext_dir = "gamelib/extensions"
 
 glfw_source = {
     COMMON: [
@@ -25,7 +26,7 @@ glfw_source = {
         "null_init.c",
         "null_monitor.c",
         "null_window.c",
-        "null_joystick.c"
+        "null_joystick.c",
     ],
     POSIX: [
         "posix_time.c",
@@ -36,7 +37,7 @@ glfw_source = {
         "x11_monitor.c",
         "x11_window.c",
         "xkb_unicode.c",
-        "glx_context.c"
+        "glx_context.c",
     ],
     WINDOWS: [
         "win32_module.c",
@@ -46,7 +47,7 @@ glfw_source = {
         "win32_joystick.c",
         "win32_monitor.c",
         "win32_window.c",
-        "wgl_context.c"
+        "wgl_context.c",
     ],
     MACOS: [
         "posix_module.c",
@@ -56,35 +57,34 @@ glfw_source = {
         "cocoa_joystick.m",
         "cocoa_monitor.m",
         "cocoa_window.m",
-        "nsgl_context.m"
-    ]
+        "nsgl_context.m",
+    ],
 }
 
 cflags = {
     POSIX: ["-Wall", "-D_GLFW_X11", "-Wno-missing-braces"],
     WINDOWS: ["/Wall", "/D_GLFW_WIN32"],
-    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"]  # FIXME
+    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"],  # FIXME
 }
 
 libraries = {
     POSIX: ["rt", "m", "dl"],
     WINDOWS: ["gdi32"],
-    MACOS: ["Cocoa", "IOKit", "CoreFoundation"]  # FIXME
+    MACOS: ["Cocoa", "IOKit", "CoreFoundation"],  # FIXME
 }
 
 relevant_glfw_source = glfw_source[COMMON] + glfw_source[PLATFORM]
-glfw_files = [f"{glfw_dir}/{fn}" for fn in relevant_glfw_source]
-print(glfw_files)
+relevant_glfw_files = [f"{glfw_dir}/{fn}" for fn in relevant_glfw_source]
 
 window_module = setuptools.Extension(
     "window",
     sources=[
-        *glfw_files,
-        "gamelib/extensions/window_module.c",
-        "gamelib/extensions/glad.c"
+        *relevant_glfw_files,
+        f"{glad_dir}/glad.c",
+        f"{cext_dir}/window_module.c",
     ],
     libraries=libraries[PLATFORM],
-    include_dirs=[str(include_dir), str(glfw_dir)],
+    include_dirs=[glad_dir, glfw_dir],
     extra_compile_args=cflags[PLATFORM],
 )
 

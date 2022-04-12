@@ -4,8 +4,8 @@
 #define GLFW_INCLUDE_NONE
 
 #include <Python.h>
-#include "glad.h"
-#include <GLFW/glfw3.h>
+#include <glad.h>
+#include <glfw3.h>
 #include <structmember.h>
 
 
