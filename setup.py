@@ -63,14 +63,14 @@ glfw_source = {
 
 cflags = {
     POSIX: ["-Wall", "-D_GLFW_X11", "-Wno-missing-braces"],
-    WINDOWS: ["/Wall", "/D_GLFW_WIN32"],
-    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"],  # FIXME
+    WINDOWS: ["/D_GLFW_WIN32"],
+    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"]  # FIXME
 }
 
 libraries = {
     POSIX: ["rt", "m", "dl"],
-    WINDOWS: ["gdi32"],
-    MACOS: ["Cocoa", "IOKit", "CoreFoundation"],  # FIXME
+    WINDOWS: ["gdi32", "user32", "kernel32", "shell32"],
+    MACOS: ["Cocoa", "IOKit", "CoreFoundation"]  # FIXME
 }
 
 relevant_glfw_source = glfw_source[COMMON] + glfw_source[PLATFORM]
