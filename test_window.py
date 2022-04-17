@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import window
 import time
+
+import window
 
 window.init()
 
