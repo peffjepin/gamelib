@@ -3,7 +3,7 @@ import setuptools
 
 
 PLATFORM = os.name.lower()
-MACOS = "macos"
+MACOS = "darwin"
 WINDOWS = "nt"
 POSIX = "posix"
 COMMON = "common"
@@ -49,7 +49,7 @@ glfw_source = {
         "win32_window.c",
         "wgl_context.c",
     ],
-    MACOS: [
+    MACOS: [  # FIXME
         "posix_module.c",
         "posix_thread.c",
         "cocoa_time.c",
@@ -64,24 +64,25 @@ glfw_source = {
 cflags = {
     POSIX: ["-Wall", "-D_GLFW_X11", "-Wno-missing-braces"],
     WINDOWS: ["/D_GLFW_WIN32"],
-    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"]  # FIXME
+    MACOS: ["-Wall", "-D_GLFW_COCOA", "-D_GLFW_BUILD_DLL"],  # FIXME
 }
 
 libraries = {
     POSIX: ["rt", "m", "dl"],
     WINDOWS: ["gdi32", "user32", "kernel32", "shell32"],
-    MACOS: ["Cocoa", "IOKit", "CoreFoundation"]  # FIXME
+    MACOS: ["Cocoa", "IOKit", "CoreFoundation"],  # FIXME
 }
 
 relevant_glfw_source = glfw_source[COMMON] + glfw_source[PLATFORM]
 relevant_glfw_files = [f"{glfw_dir}/{fn}" for fn in relevant_glfw_source]
 
-window_module = setuptools.Extension(
-    "window",
+graphics_module = setuptools.Extension(
+    "_graphics",
     sources=[
         *relevant_glfw_files,
+        f"{cext_dir}/graphics_module.c",
         f"{glad_dir}/glad.c",
-        f"{cext_dir}/window_module.c",
+        f"{cext_dir}/window_object.c",
     ],
     libraries=libraries[PLATFORM],
     include_dirs=[glad_dir, glfw_dir],
@@ -90,4 +91,4 @@ window_module = setuptools.Extension(
 
 
 if __name__ == "__main__":
-    setuptools.setup(ext_modules=[window_module])
+    setuptools.setup(ext_modules=[graphics_module])

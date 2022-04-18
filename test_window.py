@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import time
+import _graphics as gfx
 
-import window
+gfx.init()
 
-window.init()
-
-w1 = window.Window(400, 300, "hello1")
-w2 = window.Window(300, 400, "hello2")
+w1 = gfx.Window(400, 300, "hello1")
+w2 = gfx.Window(300, 400, "hello2")
 
 ts = time.time()
 frames = 0
@@ -28,5 +27,4 @@ while True:
     w2.poll()
 
 print(f"{frames=} ({frames/5:.2f} fps)")
-w1.destroy()
-w2.destroy()
+gfx.Window.destroy_all()
