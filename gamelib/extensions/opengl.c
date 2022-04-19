@@ -68,18 +68,17 @@ opengl_write_buffer(unsigned int buffer_glo, size_t offset, size_t size, void *d
 }
 
 
-void *
-opengl_read_buffer(unsigned int buffer_glo, size_t offset, size_t size)
+int
+opengl_read_buffer(unsigned int buffer_glo, size_t offset, size_t size, void *data)
 {
-    void *data = malloc(size);
-
+    int exitcode = 0;
     glBindBuffer(GL_ARRAY_BUFFER, buffer_glo);
     glGetBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
 
     if (report_possible_error("Unable to read OpenGL buffer."))
-        data = NULL;
+        exitcode = -1;
 
-    return data;
+    return exitcode;
 }
 
 

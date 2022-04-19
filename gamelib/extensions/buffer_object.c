@@ -94,9 +94,10 @@ PyObject *OpenGLBuffer_write(OpenGLBuffer *self, PyObject *args)
 
 PyObject *OpenGLBuffer_read(OpenGLBuffer *self)
 {
-    void *data = opengl_read_buffer(self->glo, 0, self->occupied_size);
+    char data[self->occupied_size];
+    int read_ok = opengl_read_buffer(self->glo, 0, self->occupied_size, data);
 
-    if (data == NULL) {
+    if (read_ok < 0) {
         PyErr_SetString(BufferError, opengl_get_error());
         return NULL;
     }
