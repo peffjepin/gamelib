@@ -61,6 +61,13 @@ glfw_source = {
     ],
 }
 
+graphics_module_source = [
+    "opengl.c",
+    "window_object.c",
+    "buffer_object.c",
+    "graphics_module.c",
+]
+
 cflags = {
     POSIX: ["-Wall", "-D_GLFW_X11", "-Wno-missing-braces"],
     WINDOWS: ["/D_GLFW_WIN32"],
@@ -75,14 +82,14 @@ libraries = {
 
 relevant_glfw_source = glfw_source[COMMON] + glfw_source[PLATFORM]
 relevant_glfw_files = [f"{glfw_dir}/{fn}" for fn in relevant_glfw_source]
+graphics_module_files = [f"{cext_dir}/{fn}" for fn in graphics_module_source]
 
 graphics_module = setuptools.Extension(
     "_graphics",
     sources=[
-        *relevant_glfw_files,
-        f"{cext_dir}/graphics_module.c",
         f"{glad_dir}/glad.c",
-        f"{cext_dir}/window_object.c",
+        *relevant_glfw_files,
+        *graphics_module_files,
     ],
     libraries=libraries[PLATFORM],
     include_dirs=[glad_dir, glfw_dir],

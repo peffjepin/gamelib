@@ -1,5 +1,6 @@
 #define MAX_WINDOWS 8
 #include "window_object.h"
+#include "opengl.h"
 
 static Window* active_window;
 static Window* WINDOWS[MAX_WINDOWS];
@@ -61,6 +62,7 @@ Window_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
     glfwMakeContextCurrent(window);
     gladLoadGL();
+    opengl_initialize();
     glfwSetKeyCallback(window, glfw_key_callback);
 
     if (active_window != NULL) {
