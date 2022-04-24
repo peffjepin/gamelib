@@ -141,7 +141,11 @@ Window_dealloc(Window *self)
 PyObject *
 Window_destroy_all(PyObject *self)
 {
-    glfwTerminate();
+    for (int i=0; i<MAX_WINDOWS; i++) {
+        Window *window = WINDOWS[i];
+        if (window != NULL)
+            Window_destroy(window);
+    }
     Py_RETURN_NONE;
 }
 
