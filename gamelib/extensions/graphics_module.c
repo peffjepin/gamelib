@@ -2,6 +2,7 @@
 
 #include "window_object.h"
 #include "buffer_object.h"
+#include "program_object.h"
 #include <structmember.h>
 
 
@@ -20,6 +21,17 @@ PyDoc_STRVAR(Module_init_doc,
 "Initializes GLFW internally.\n\
 This must be called prior to creating windows manually.\n");
 
+
+static PyTypeObject OpenGLProgramType = {
+    PyObject_HEAD_INIT(NULL)
+    .tp_name = "_graphics.OpenGLProgram",
+    .tp_doc = OpenGLProgramType_doc,
+    .tp_basicsize = sizeof(OpenGLProgram),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = OpenGLProgram_new,
+    .tp_dealloc = (destructor) OpenGLProgram_dealloc,
+};
 
 
 static PyMethodDef OpenGLBuffer_methods[] = {
@@ -95,6 +107,8 @@ PyInit__graphics(void)
     Py_XINCREF(WindowError);
     BufferError = PyErr_NewException("_graphics.BufferError", NULL, NULL);
     Py_XINCREF(BufferError);
+    GLSLError = PyErr_NewException("_graphics.GLSLError", NULL, NULL);
+    Py_XINCREF(GLSLError);
 
     if (module == NULL)
         goto error;
@@ -104,11 +118,15 @@ PyInit__graphics(void)
         goto error;
     if (PyModule_AddObject(module, "BufferError", BufferError) < 0)
         goto error;
+    if (PyModule_AddObject(module, "GLSLError", GLSLError) < 0)
+        goto error;
 
 
     if (PyType_Ready(&WindowType) < 0)
         goto error;
     if (PyType_Ready(&OpenGLBufferType) < 0)
+        goto error;
+    if (PyType_Ready(&OpenGLProgramType) < 0)
         goto error;
 
 
@@ -122,12 +140,18 @@ PyInit__graphics(void)
         Py_DECREF(&OpenGLBufferType);
         goto error;
     }
+    Py_INCREF(&OpenGLProgramType);
+    if (PyModule_AddObject(module, "OpenGLProgram", (PyObject*)&OpenGLProgramType) < 0) {
+        Py_DECREF(&OpenGLProgramType);
+        goto error;
+    }
 
     return module;
 
 error:
     Py_XDECREF(WindowError);
     Py_XDECREF(BufferError);
+    Py_XDECREF(GLSLError);
     Py_XDECREF(module);
     return NULL;
 }

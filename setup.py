@@ -1,4 +1,5 @@
 import os
+import pathlib
 import setuptools
 
 
@@ -62,10 +63,8 @@ glfw_source = {
 }
 
 graphics_module_source = [
-    "opengl.c",
-    "window_object.c",
-    "buffer_object.c",
-    "graphics_module.c",
+    p.name for p in (pathlib.Path(__file__).parent / cext_dir).iterdir()
+    if p.name.endswith(".c")
 ]
 
 cflags = {

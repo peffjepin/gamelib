@@ -44,7 +44,8 @@ PyObject *OpenGLBuffer_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
     unsigned int glo;
     if ((glo = opengl_create_buffer(size, data)) < 0) {
-        PyErr_SetString(BufferError, opengl_get_error());
+        OPENGL_CONSUME_ERROR(error);
+        PyErr_SetString(BufferError, error);
         goto cleanup;
     }
 
@@ -77,13 +78,15 @@ PyObject *OpenGLBuffer_write(OpenGLBuffer *self, PyObject *args)
     if (size > self->internal_size) {
         opengl_release_buffer(self->glo);
         if ((self->glo = opengl_create_buffer(size, data_source.buf)) < 0) {
-            PyErr_SetString(BufferError, opengl_get_error());
+            OPENGL_CONSUME_ERROR(error);
+            PyErr_SetString(BufferError, error);
             PyBuffer_Release(&data_source);
             return NULL;
         }
     }
     else if (opengl_write_buffer(self->glo, 0, data_source.len, data_source.buf) < 0) {
-        PyErr_SetString(BufferError, opengl_get_error());
+        OPENGL_CONSUME_ERROR(error);
+        PyErr_SetString(BufferError, error);
         PyBuffer_Release(&data_source);
         return NULL;
     }
@@ -98,7 +101,8 @@ PyObject *OpenGLBuffer_read(OpenGLBuffer *self)
     int read_ok = opengl_read_buffer(self->glo, 0, self->occupied_size, data);
 
     if (read_ok < 0) {
-        PyErr_SetString(BufferError, opengl_get_error());
+        OPENGL_CONSUME_ERROR(error);
+        PyErr_SetString(BufferError, error);
         return NULL;
     }
     

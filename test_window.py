@@ -28,3 +28,4 @@ while True:
 
 print(f"{frames=} ({frames/5:.2f} fps)")
 gfx.Window.destroy_all()
+exit(0)
